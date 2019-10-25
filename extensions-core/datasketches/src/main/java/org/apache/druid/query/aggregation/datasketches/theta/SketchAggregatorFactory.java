@@ -44,18 +44,21 @@ import java.util.List;
 public abstract class SketchAggregatorFactory extends AggregatorFactory
 {
   public static final int DEFAULT_MAX_SKETCH_SIZE = 16384;
+  public static final float DEFAULT_UP_FRONT = 1.0F;
 
   protected final String name;
   protected final String fieldName;
   protected final int size;
+  protected final float upFront;
   private final byte cacheId;
 
-  public SketchAggregatorFactory(String name, String fieldName, Integer size, byte cacheId)
+  public SketchAggregatorFactory(String name, String fieldName, Integer size, Float upFront, byte cacheId)
   {
     this.name = Preconditions.checkNotNull(name, "Must have a valid, non-null aggregator name");
     this.fieldName = Preconditions.checkNotNull(fieldName, "Must have a valid, non-null fieldName");
 
     this.size = size == null ? DEFAULT_MAX_SKETCH_SIZE : size;
+    this.upFront = upFront == null ? DEFAULT_UP_FRONT : upFront;
     Util.checkIfPowerOf2(this.size, "size");
 
     this.cacheId = cacheId;
@@ -66,7 +69,7 @@ public abstract class SketchAggregatorFactory extends AggregatorFactory
   public Aggregator factorize(ColumnSelectorFactory metricFactory)
   {
     BaseObjectColumnValueSelector selector = metricFactory.makeColumnValueSelector(fieldName);
-    return new SketchAggregator(selector, size);
+    return new SketchAggregator(selector, size, upFront);
   }
 
   @SuppressWarnings("unchecked")
@@ -74,7 +77,7 @@ public abstract class SketchAggregatorFactory extends AggregatorFactory
   public BufferAggregator factorizeBuffered(ColumnSelectorFactory metricFactory)
   {
     BaseObjectColumnValueSelector selector = metricFactory.makeColumnValueSelector(fieldName);
-    return new SketchBufferAggregator(selector, size, getMaxIntermediateSizeWithNulls());
+    return new SketchBufferAggregator(selector, size, getMaxIntermediateSizeWithNulls(), upFront);
   }
 
   @Override
@@ -92,7 +95,7 @@ public abstract class SketchAggregatorFactory extends AggregatorFactory
   @Override
   public Object combine(Object lhs, Object rhs)
   {
-    return SketchHolder.combine(lhs, rhs, size);
+    return SketchHolder.combine(lhs, rhs, size, upFront);
   }
 
   @Override
@@ -100,7 +103,7 @@ public abstract class SketchAggregatorFactory extends AggregatorFactory
   {
     return new ObjectAggregateCombiner<SketchHolder>()
     {
-      private final Union union = (Union) SetOperation.builder().setNominalEntries(size).build(Family.UNION);
+      private final Union union = (Union) SetOperation.builder().setNominalEntries(size).setP(upFront).build(Family.UNION);
       private final SketchHolder combined = SketchHolder.of(union);
 
       @Override
@@ -152,6 +155,12 @@ public abstract class SketchAggregatorFactory extends AggregatorFactory
   public int getSize()
   {
     return size;
+  }
+
+  @JsonProperty
+  public float getUpFront()
+  {
+    return upFront;
   }
 
   @Override

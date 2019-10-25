@@ -37,13 +37,15 @@ public class SketchBufferAggregator implements BufferAggregator
   private final BaseObjectColumnValueSelector selector;
   private final int size;
   private final int maxIntermediateSize;
+  private final float upFront;
   private final IdentityHashMap<ByteBuffer, Int2ObjectMap<Union>> unions = new IdentityHashMap<>();
   private final IdentityHashMap<ByteBuffer, WritableMemory> memCache = new IdentityHashMap<>();
 
-  public SketchBufferAggregator(BaseObjectColumnValueSelector selector, int size, int maxIntermediateSize)
+  public SketchBufferAggregator(BaseObjectColumnValueSelector selector, int size, int maxIntermediateSize, float upFront)
   {
     this.selector = selector;
     this.size = size;
+    this.upFront = upFront;
     this.maxIntermediateSize = maxIntermediateSize;
   }
 
@@ -96,7 +98,7 @@ public class SketchBufferAggregator implements BufferAggregator
     WritableMemory mem = getMemory(buf).writableRegion(position, maxIntermediateSize);
     Union union = isWrapped
                   ? (Union) SetOperation.wrap(mem)
-                  : (Union) SetOperation.builder().setNominalEntries(size).build(Family.UNION, mem);
+                  : (Union) SetOperation.builder().setNominalEntries(size).setP(upFront).build(Family.UNION, mem);
     Int2ObjectMap<Union> unionMap = unions.get(buf);
     if (unionMap == null) {
       unionMap = new Int2ObjectOpenHashMap<>();

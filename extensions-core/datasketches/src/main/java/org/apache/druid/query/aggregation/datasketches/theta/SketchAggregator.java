@@ -33,16 +33,18 @@ public class SketchAggregator implements Aggregator
   private final BaseObjectColumnValueSelector selector;
   private final int size;
   private Union union;
+  private float upFront;
 
-  public SketchAggregator(BaseObjectColumnValueSelector selector, int size)
+  public SketchAggregator(BaseObjectColumnValueSelector selector, int size, float upfront)
   {
     this.selector = selector;
     this.size = size;
+    this.upFront = upfront;
   }
 
   private void initUnion()
   {
-    union = new SynchronizedUnion((Union) SetOperation.builder().setNominalEntries(size).build(Family.UNION));
+    union = new SynchronizedUnion((Union) SetOperation.builder().setNominalEntries(size).setP(upFront).build(Family.UNION));
   }
 
   @Override

@@ -27,13 +27,15 @@ import org.apache.druid.query.aggregation.datasketches.theta.SketchMergeAggregat
  */
 public class OldSketchBuildAggregatorFactory extends SketchMergeAggregatorFactory
 {
+
   @JsonCreator
   public OldSketchBuildAggregatorFactory(
       @JsonProperty("name") String name,
       @JsonProperty("fieldName") String fieldName,
-      @JsonProperty("size") Integer size
+      @JsonProperty("size") Integer size,
+      @JsonProperty("upFront") Float upFront
   )
   {
-    super(name, fieldName, size, true, false, null);
+    super(name, fieldName, size, true, false, null, upFront);
   }
 }
